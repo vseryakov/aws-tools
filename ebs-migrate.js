@@ -166,13 +166,6 @@ async.series([
         });
     },
     function(next) {
-        // Associate with the same Elastic IP, ignore errors as well, it can be associated once the instance is up
-        if (!instance.elasticIp) return next();
-        var params = { PublicIp: instance.elasticIp, InstanceId: instance2.instanceId };
-        if (instance.subnetId) params.AllowReassociation = true;
-        request("AssociateAddress", params, function() { next(); });
-    },
-    function(next) {
         // Stop new instance to re-attach our EBS drive
         request("StopInstances", { "InstanceId.1": instance2.instanceId }, next);
     },
@@ -201,6 +194,16 @@ async.series([
     },
     function(next) {
         request("StartInstances", { "InstanceId.1": instance2.instanceId }, next);
+    },
+    function(next) {
+        waitForStatus("DescribeInstances", 'instance-id', instance2.instanceId, "reservationSet.item.instancesSet.item.instanceState.name", "running", next);
+    },
+    function(next) {
+        // Associate with the same Elastic IP, ignore errors as well, it can be associated once the instance is up
+        if (!instance.elasticIp) return next();
+        var params = { PublicIp: instance.elasticIp, InstanceId: instance2.instanceId };
+        if (instance.subnetId) params.AllowReassociation = true;
+        request("AssociateAddress", params, function() { next(); });
     },
     ], function(err) {
         if (err) return console.log("ERROR:", util.inspect(err, { depth: null }));

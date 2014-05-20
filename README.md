@@ -28,6 +28,9 @@ To install:
 
 	npm install async aws2js
 
+To run the script:
+
+	node ebs-migrate -instance id -type type ...
 
 Command line parameters:
 
